@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stunning — AI Build Console
 
-## Getting Started
+A landing page where you describe what you want to build, optionally pick a few dummy integrations (Stripe, Shopify, Gmail, Slack, Google Sheets), and get a build plan back from Gemini. The selected integrations are injected into the AI's system prompt as context only — nothing actually connects to them.
 
-First, run the development server:
+## Getting started
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey), then create `.env.local` in the project root:
+
+   ```bash
+   cp .env.example .env.local
+   # then edit .env.local and paste your key in
+   ```
+
+3. Run the dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000).
+
+## Other scripts
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint          # ESLint
+npm run build         # production build
+npm run format        # format with Prettier
+npm run format:check  # check formatting without writing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project layout
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `app/page.tsx` / `app/components/builder-console.tsx` — the landing page and its interactive prompt console.
+- `app/api/generate/route.ts` — validates the request and calls the AI helper.
+- `lib/gemini.ts` — builds the system prompt (with the selected integrations injected) and calls Gemini.
+- `lib/integrations.ts` — the list of dummy integrations shown in the UI.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `DECISIONS.md` and `TECH.md` for the write-ups on production trade-offs and the model choice.
