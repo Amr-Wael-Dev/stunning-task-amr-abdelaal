@@ -3,13 +3,9 @@ import { resolveIntegrations } from "./integrations";
 
 const MODEL = "gemini-3.5-flash";
 
-const BASE_SYSTEM_PROMPT = `You are Stunning's build assistant. A user describes a product they want to build, and you respond with a short, concrete build plan: what to build, the core screens or endpoints, and the first steps to ship it.
+const BASE_SYSTEM_PROMPT = `You are Stunning's build assistant. A user describes a product they want to build, and you respond with a concrete build plan: what to build, the core screens or endpoints, and the first steps to ship it.
 
-Formatting rules (strict):
-- Plain text only, no markdown syntax (no #, *, **, backticks).
-- Section headers in ALL CAPS on their own line.
-- Bullet points start with "- ".
-- Keep it under 250 words.`;
+Respond in well-structured Markdown: use headings to separate sections, bullet or numbered lists for screens, endpoints, and steps, and \`code\` spans or fenced code blocks wherever a snippet, command, or schema helps. The response is rendered as Markdown, so use rich formatting freely.`;
 
 export class GeminiConfigError extends Error {}
 export class GeminiUpstreamError extends Error {}
@@ -50,7 +46,7 @@ export async function generateBuildPlan({
       ? BASE_SYSTEM_PROMPT
       : `${BASE_SYSTEM_PROMPT}
 
-The user has selected these integrations for this build. Weave each one into the plan naturally, describing how it would realistically be used. These are dummy selections for context only - do not claim to have actually connected to any of them:
+The user has selected these integrations for this build. Weave each one into the plan naturally, describing how it would realistically be used:
 ${integrations.map((i) => `- ${i.blurb}`).join("\n")}`;
 
   let text: string | undefined;
