@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CircleNotch,
   PaperPlaneRight,
@@ -11,6 +11,27 @@ import { INTEGRATIONS } from "@/lib/integrations";
 
 const MAX_PROMPT_LENGTH = 4000;
 
+const FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+const EXAMPLE_PROMPTS = [
+  {
+    label: "Candle store with checkout",
+    prompt:
+      "An online store for handmade candles with checkout and order tracking.",
+  },
+  {
+    label: "Waitlist landing page",
+    prompt:
+      "A waitlist page that collects emails and notifies the team when someone signs up.",
+  },
+  {
+    label: "Internal support dashboard",
+    prompt:
+      "An internal dashboard support agents use to track and resolve customer tickets.",
+  },
+];
+
 type Status = "idle" | "loading" | "success" | "error";
 
 export function BuilderConsole() {
@@ -19,9 +40,19 @@ export function BuilderConsole() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const trimmedPrompt = prompt.trim();
   const canSubmit = trimmedPrompt.length > 0 && status !== "loading";
+
+  // Auto-resize the textarea to fit its content instead of scrolling inside
+  // a fixed-height box, so a longer prompt stays fully visible.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [prompt]);
 
   function toggleIntegration(id: string) {
     setSelectedIds((current) =>
@@ -29,6 +60,11 @@ export function BuilderConsole() {
         ? current.filter((existing) => existing !== id)
         : [...current, id],
     );
+  }
+
+  function fillExample(text: string) {
+    setPrompt(text);
+    textareaRef.current?.focus();
   }
 
   async function submit() {
@@ -68,36 +104,46 @@ export function BuilderConsole() {
     void submit();
   }
 
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      void submit();
+    }
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-12">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="prompt" className="text-sm font-medium">
-            What do you want to build?
-          </label>
-          <textarea
-            id="prompt"
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder="A waitlist page that collects emails and notifies the team when someone signs up..."
-            rows={6}
-            maxLength={MAX_PROMPT_LENGTH}
-            className="border-surface-border bg-surface text-foreground placeholder:text-muted focus:ring-accent w-full resize-none rounded-xl border px-4 py-3 text-base focus:ring-2 focus:outline-none"
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-muted text-xs">
-              Selected integrations are added as context for the assistant, they
-              are not connected to anything real.
-            </p>
-            <span className="text-muted shrink-0 pl-3 text-xs">
-              {prompt.length} / {MAX_PROMPT_LENGTH}
-            </span>
-          </div>
+    <div className="mx-auto flex w-full max-w-3xl flex-col">
+      <form
+        onSubmit={handleSubmit}
+        className="border-surface-border bg-surface rounded-2xl border shadow-sm"
+      >
+        <label htmlFor="prompt" className="sr-only">
+          What do you want to build?
+        </label>
+        <textarea
+          ref={textareaRef}
+          id="prompt"
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="A waitlist page that collects emails and notifies the team when someone signs up..."
+          rows={3}
+          maxLength={MAX_PROMPT_LENGTH}
+          className={`placeholder:text-muted w-full resize-none rounded-t-2xl bg-transparent px-5 pt-5 pb-2 text-base ${FOCUS_RING}`}
+        />
+
+        <div className="text-muted flex items-center justify-end px-5 text-xs">
+          <span>
+            {prompt.length} / {MAX_PROMPT_LENGTH}
+          </span>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Integrations (optional)</span>
-          <div className="flex flex-wrap gap-2">
+        <div className="border-surface-border flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <div
+            role="group"
+            aria-label="Integrations"
+            className="flex flex-wrap gap-2"
+          >
             {INTEGRATIONS.map((integration) => {
               const selected = selectedIds.includes(integration.id);
               return (
@@ -106,7 +152,7 @@ export function BuilderConsole() {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => toggleIntegration(integration.id)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors active:-translate-y-px ${
+                  className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors active:-translate-y-px ${FOCUS_RING} ${
                     selected
                       ? "border-accent bg-accent/10 text-foreground"
                       : "border-surface-border text-muted hover:border-accent/50 hover:text-foreground"
@@ -125,33 +171,67 @@ export function BuilderConsole() {
               );
             })}
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="bg-accent text-accent-foreground inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-medium transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
-        >
-          {status === "loading" ? (
-            <>
-              <CircleNotch className="h-5 w-5 animate-spin" weight="bold" />
-              Generating...
-            </>
-          ) : (
-            <>
-              Generate plan
-              <PaperPlaneRight className="h-5 w-5" weight="bold" />
-            </>
-          )}
-        </button>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={`bg-accent text-accent-foreground inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
+          >
+            {status === "loading" ? (
+              <>
+                <CircleNotch className="h-5 w-5 animate-spin" weight="bold" />
+                Generating
+              </>
+            ) : (
+              <>
+                Generate
+                <PaperPlaneRight className="h-5 w-5" weight="bold" />
+              </>
+            )}
+          </button>
+        </div>
       </form>
 
-      <ResponsePanel
-        status={status}
-        result={result}
-        errorMessage={errorMessage}
-        onRetry={submit}
-      />
+      <p className="text-muted mt-3 px-1 text-xs">
+        Selected integrations are added as context for the assistant, they are
+        not connected to anything real. Press{" "}
+        <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
+          ⌘
+        </kbd>
+        <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
+          Enter
+        </kbd>{" "}
+        to generate.
+      </p>
+
+      <div
+        role="group"
+        aria-label="Example prompts"
+        className="mt-4 flex flex-wrap items-center gap-2"
+      >
+        <span className="text-muted text-xs" aria-hidden="true">
+          Try:
+        </span>
+        {EXAMPLE_PROMPTS.map((example) => (
+          <button
+            key={example.label}
+            type="button"
+            onClick={() => fillExample(example.prompt)}
+            className={`border-surface-border text-muted hover:border-accent/50 hover:text-foreground rounded-full border px-3 py-1.5 text-xs transition-colors ${FOCUS_RING}`}
+          >
+            {example.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-10">
+        <ResponsePanel
+          status={status}
+          result={result}
+          errorMessage={errorMessage}
+          onRetry={submit}
+        />
+      </div>
     </div>
   );
 }
@@ -168,7 +248,11 @@ function ResponsePanel({
   onRetry: () => void;
 }) {
   return (
-    <div className="border-surface-border bg-surface flex min-h-[320px] flex-col rounded-2xl border p-6 lg:min-h-[420px]">
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      className="border-surface-border bg-surface flex min-h-[220px] flex-col rounded-2xl border p-6"
+    >
       {status === "idle" && (
         <div className="text-muted m-auto flex flex-col items-center gap-3 text-center">
           <Sparkle className="h-6 w-6" />
@@ -200,7 +284,7 @@ function ResponsePanel({
           <button
             type="button"
             onClick={onRetry}
-            className="text-accent text-sm font-medium underline underline-offset-2"
+            className={`text-accent rounded text-sm font-medium underline underline-offset-2 ${FOCUS_RING}`}
           >
             Try again
           </button>

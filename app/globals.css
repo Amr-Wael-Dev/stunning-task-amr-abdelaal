@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --surface: #f4f4f5;
-  --surface-border: #e4e4e7;
-  --muted: #71717a;
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
+  --background: oklch(98.4% 0.003 258);
+  --foreground: oklch(21% 0.02 258);
+  --surface: oklch(96.5% 0.005 258);
+  --surface-border: oklch(90% 0.008 258);
+  --muted: oklch(48% 0.02 258);
+  --accent: oklch(51% 0.19 258);
+  --accent-foreground: oklch(99% 0.003 258);
+
+  --glow-1: oklch(58% 0.16 258 / 10%);
+  --glow-2: oklch(72% 0.12 195 / 9%);
 }
 
 @theme inline {
@@ -24,13 +27,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #09090b;
-    --foreground: #f4f4f5;
-    --surface: #18181b;
-    --surface-border: #27272a;
-    --muted: #a1a1aa;
-    --accent: #3b82f6;
-    --accent-foreground: #09090b;
+    --background: oklch(16% 0.012 258);
+    --foreground: oklch(95% 0.005 258);
+    --surface: oklch(21% 0.014 258);
+    --surface-border: oklch(29% 0.016 258);
+    --muted: oklch(68% 0.02 258);
+    --accent: oklch(70% 0.15 255);
+    --accent-foreground: oklch(15% 0.02 258);
+
+    --glow-1: oklch(55% 0.19 258 / 22%);
+    --glow-2: oklch(62% 0.15 195 / 16%);
   }
 }
 
@@ -38,6 +44,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Restrained two-tone glow behind the hero/console. Fixed-radius circles, so
+   it only ever shows near the top of its container regardless of how tall
+   the page grows below it. */
+.hero-glow {
+  background:
+    radial-gradient(600px circle at 30% 0%, var(--glow-1), transparent 60%),
+    radial-gradient(500px circle at 80% 10%, var(--glow-2), transparent 60%);
 }
 
 @keyframes fade-in-up {
