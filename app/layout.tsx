@@ -20,7 +20,7 @@ const monoFont = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stunning - Build Console",
+  title: "Stunning Task | Amr Abdelaal",
   description:
     "Describe what you want to build and get a build plan back in seconds.",
 };

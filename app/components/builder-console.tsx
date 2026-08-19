@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Check,
   CircleNotch,
+  Copy,
   PaperPlaneRight,
   Sparkle,
   WarningCircle,
 } from "@phosphor-icons/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { INTEGRATIONS } from "@/lib/integrations";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
@@ -42,6 +46,135 @@ const PAUSE_AFTER_TYPED_MS = 1600;
 const PAUSE_AFTER_DELETED_MS = 300;
 
 type Status = "idle" | "loading" | "success" | "error";
+
+// Maps Markdown elements to the app's existing design tokens instead of
+// pulling in a typography plugin, so rendered responses match the rest of
+// the UI (oklch tokens, Space Grotesk/Inter/Geist Mono, data-theme dark
+// mode) rather than generic `prose` defaults.
+const MARKDOWN_COMPONENTS = {
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h1 className="text-foreground mt-6 mb-2 text-lg font-semibold first:mt-0">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 className="text-foreground mt-5 mb-2 text-base font-semibold first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 className="text-foreground mt-4 mb-1.5 text-sm font-semibold first:mt-0">
+      {children}
+    </h3>
+  ),
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="text-foreground mb-3 text-sm leading-relaxed last:mb-0">
+      {children}
+    </p>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="mb-3 list-disc space-y-1 pl-5 text-sm leading-relaxed last:mb-0">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm leading-relaxed last:mb-0">
+      {children}
+    </ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-foreground">{children}</li>
+  ),
+  a: ({ children, href }: { children?: React.ReactNode; href?: string }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="text-accent underline underline-offset-2"
+    >
+      {children}
+    </a>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="text-foreground font-semibold">{children}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => (
+    <em className="italic">{children}</em>
+  ),
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote className="border-accent/40 text-muted mb-3 border-l-2 pl-3 text-sm italic last:mb-0">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="border-surface-border my-4" />,
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="border-surface-border mb-3 overflow-x-auto rounded-lg border last:mb-0">
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="border-surface-border bg-foreground/5 text-foreground border-b px-3 py-2 text-left font-semibold">
+      {children}
+    </th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="border-surface-border text-foreground border-b px-3 py-2 align-top last:border-b-0">
+      {children}
+    </td>
+  ),
+  code: ({
+    inline,
+    children,
+  }: {
+    inline?: boolean;
+    children?: React.ReactNode;
+  }) =>
+    inline ? (
+      <code className="bg-foreground/10 text-foreground rounded px-1.5 py-0.5 font-mono text-[0.85em]">
+        {children}
+      </code>
+    ) : (
+      <code className="font-mono text-[0.85em]">{children}</code>
+    ),
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="bg-foreground/5 border-surface-border text-foreground mb-3 overflow-x-auto rounded-lg border p-3 font-mono text-[0.85em] leading-relaxed last:mb-0">
+      {children}
+    </pre>
+  ),
+};
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleClick() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard access can fail (permissions, insecure context); silently
+      // no-op rather than surface an alert for a non-critical action.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label={copied ? "Copied" : "Copy build plan"}
+      className={`border-surface-border text-muted hover:border-accent/50 hover:text-foreground inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${FOCUS_RING}`}
+    >
+      {copied ? (
+        <Check className="h-4.5 w-4.5" weight="bold" />
+      ) : (
+        <Copy className="h-4.5 w-4.5" weight="bold" />
+      )}
+      <span aria-live="polite" className="sr-only">
+        {copied ? "Copied to clipboard" : ""}
+      </span>
+    </button>
+  );
+}
 
 export function BuilderConsole() {
   const [prompt, setPrompt] = useState("");
@@ -198,7 +331,7 @@ export function BuilderConsole() {
         className="border-surface-border bg-surface rounded-2xl border shadow-sm"
       >
         <label htmlFor="prompt" className="sr-only">
-          What do you want to build?
+          What would you like to build?
         </label>
         <div className="relative">
           <textarea
@@ -216,12 +349,12 @@ export function BuilderConsole() {
             placeholder={prefersReducedMotion ? STATIC_PLACEHOLDER : ""}
             rows={3}
             maxLength={MAX_PROMPT_LENGTH}
-            className={`placeholder:text-muted w-full resize-none rounded-t-2xl bg-transparent px-5 pt-5 pb-2 text-base ${FOCUS_RING}`}
+            className={`placeholder:text-muted w-full resize-none rounded-t-2xl bg-transparent px-5 pt-5 pb-14 text-base ${FOCUS_RING}`}
           />
           {showTypingOverlay && (
             <div
               aria-hidden="true"
-              className="text-muted pointer-events-none absolute top-0 left-0 w-full px-5 pt-5 pb-2 font-mono text-base"
+              className="text-muted pointer-events-none absolute top-0 left-0 w-full px-5 pt-5 pb-14 font-mono text-base"
             >
               {typedText}
               <span
@@ -230,15 +363,45 @@ export function BuilderConsole() {
               />
             </div>
           )}
+
+          <div className="absolute right-4 bottom-3 left-4 flex items-center justify-between gap-3">
+            <span className="text-muted text-xs">
+              {prompt.length} / {MAX_PROMPT_LENGTH}
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-muted hidden items-center gap-1 text-xs sm:flex">
+                <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
+                  ⌘
+                </kbd>
+                <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
+                  Enter
+                </kbd>
+              </span>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className={`bg-accent text-accent-foreground inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
+              >
+                {status === "loading" ? (
+                  <>
+                    <CircleNotch
+                      className="h-5 w-5 animate-spin"
+                      weight="bold"
+                    />
+                    Generating
+                  </>
+                ) : (
+                  <>
+                    Generate
+                    <PaperPlaneRight className="h-5 w-5" weight="bold" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="text-muted flex items-center justify-end px-5 text-xs">
-          <span>
-            {prompt.length} / {MAX_PROMPT_LENGTH}
-          </span>
-        </div>
-
-        <div className="border-surface-border flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+        <div className="border-surface-border border-t px-4 py-3">
           <div
             role="group"
             aria-label="Integrations"
@@ -271,38 +434,8 @@ export function BuilderConsole() {
               );
             })}
           </div>
-
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={`bg-accent text-accent-foreground inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
-          >
-            {status === "loading" ? (
-              <>
-                <CircleNotch className="h-5 w-5 animate-spin" weight="bold" />
-                Generating
-              </>
-            ) : (
-              <>
-                Generate
-                <PaperPlaneRight className="h-5 w-5" weight="bold" />
-              </>
-            )}
-          </button>
         </div>
       </form>
-
-      <p className="text-muted mt-3 px-1 text-xs">
-        Selected integrations are added as context for the assistant, they are
-        not connected to anything real. Press{" "}
-        <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
-          ⌘
-        </kbd>
-        <kbd className="border-surface-border rounded border px-1 py-0.5 font-sans">
-          Enter
-        </kbd>{" "}
-        to generate.
-      </p>
 
       <div
         role="group"
@@ -324,13 +457,20 @@ export function BuilderConsole() {
         ))}
       </div>
 
-      <div ref={responseRef} className="mt-10">
-        <ResponsePanel
-          status={status}
-          result={result}
-          errorMessage={errorMessage}
-          onRetry={submit}
-        />
+      <div ref={responseRef} className="mt-10 flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <ResponsePanel
+            status={status}
+            result={result}
+            errorMessage={errorMessage}
+            onRetry={submit}
+          />
+        </div>
+        {status === "success" && result && (
+          <div className="sticky top-6 shrink-0">
+            <CopyButton text={result} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -395,9 +535,14 @@ function ResponsePanel({
       )}
 
       {status === "success" && result && (
-        <pre className="animate-fade-in-up text-foreground font-sans text-sm leading-relaxed whitespace-pre-wrap">
-          {result}
-        </pre>
+        <div className="animate-fade-in-up">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={MARKDOWN_COMPONENTS}
+          >
+            {result}
+          </ReactMarkdown>
+        </div>
       )}
     </div>
   );

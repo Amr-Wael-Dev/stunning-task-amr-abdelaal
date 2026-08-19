@@ -1,4 +1,4 @@
-# Stunning — AI Build Console
+# Stunning Task by Amr Abdelaal
 
 A landing page where you describe what you want to build, optionally pick a few dummy integrations (Stripe, Shopify, Gmail, Slack, Google Sheets), and get a build plan back from Gemini. The selected integrations are injected into the AI's system prompt as context only — nothing actually connects to them.
 

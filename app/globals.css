@@ -67,6 +67,42 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Scrollbar: thin, uses the same tokens as the rest of the UI so it tracks
+   light/dark automatically instead of the browser's default (often stark
+   white) bars. Firefox picks this up via scrollbar-color; everything else
+   via the WebKit pseudo-elements below. Applied globally (`*`) so it also
+   covers any internally-scrolling element (code blocks, tables), not just
+   the page. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-border) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--surface-border);
+  border-radius: 999px;
+  border: 2px solid var(--background);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Theme toggle icon: shows Sun in light theme, Moon in dark theme, following
    the same three-case precedence as the color tokens above (system default,
    guarded dark override, explicit light override). Driven entirely by CSS

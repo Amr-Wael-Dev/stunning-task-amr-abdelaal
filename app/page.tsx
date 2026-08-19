@@ -3,7 +3,7 @@ import { BuilderConsole } from "./components/builder-console";
 import { ThemeToggle } from "./components/theme-toggle";
 
 export const metadata: Metadata = {
-  title: "Stunning - Build Console",
+  title: "Stunning Task | Amr Abdelaal",
   description:
     "Describe what you want to build and get a build plan back in seconds.",
 };
@@ -21,7 +21,7 @@ export default function Home() {
       <header className="border-surface-border border-b">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:px-10">
           <span className="font-display text-lg font-semibold tracking-tight">
-            Stunning
+            Stunning Task | Amr Abdelaal
           </span>
           <ThemeToggle />
         </div>
@@ -36,7 +36,7 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center px-6 pt-20 pb-24 md:px-10">
           <div className="mb-10 flex max-w-xl flex-col items-center gap-3 text-center">
             <h1 className="font-display text-4xl font-semibold tracking-tight md:text-6xl">
-              What do you want to build?
+              What would you like to build?
             </h1>
             <p className="text-muted max-w-[42ch] text-base md:text-lg">
               Add the integrations it needs, and get a build plan back in
