@@ -1,7 +1,7 @@
+import { GoogleGenAI } from "@google/genai";
 import { resolveIntegrations } from "./integrations";
 
 const MODEL = "gemini-3.5-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const BASE_SYSTEM_PROMPT = `You are Stunning's build assistant. A user describes a product they want to build, and you respond with a short, concrete build plan: what to build, the core screens or endpoints, and the first steps to ship it.
 
@@ -19,6 +19,19 @@ type GenerateArgs = {
   integrationIds: string[];
 };
 
+let client: GoogleGenAI | undefined;
+
+function getClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new GeminiConfigError(
+      "GEMINI_API_KEY is not set. Add it to .env.local.",
+    );
+  }
+  client ??= new GoogleGenAI({ apiKey });
+  return client;
+}
+
 /**
  * Builds a system prompt that incorporates the user's selected dummy
  * integrations, then asks Gemini 3.5 Flash for a build plan. The
@@ -29,16 +42,10 @@ export async function generateBuildPlan({
   prompt,
   integrationIds,
 }: GenerateArgs): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new GeminiConfigError(
-      "GEMINI_API_KEY is not set. Add it to .env.local.",
-    );
-  }
-
+  const ai = getClient();
   const integrations = resolveIntegrations(integrationIds);
 
-  const systemPrompt =
+  const systemInstruction =
     integrations.length === 0
       ? BASE_SYSTEM_PROMPT
       : `${BASE_SYSTEM_PROMPT}
@@ -46,32 +53,19 @@ export async function generateBuildPlan({
 The user has selected these integrations for this build. Weave each one into the plan naturally, describing how it would realistically be used. These are dummy selections for context only - do not claim to have actually connected to any of them:
 ${integrations.map((i) => `- ${i.blurb}`).join("\n")}`;
 
-  let response: Response;
+  let text: string | undefined;
   try {
-    response = await fetch(`${API_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      }),
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: { systemInstruction },
     });
+    text = response.text;
   } catch (cause) {
     throw new GeminiUpstreamError("Could not reach the Gemini API.", {
       cause,
     });
   }
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new GeminiUpstreamError(
-      `Gemini API responded with ${response.status}: ${body.slice(0, 500)}`,
-    );
-  }
-
-  const data = await response.json();
-  const text: string | undefined =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text) {
     throw new GeminiUpstreamError(
