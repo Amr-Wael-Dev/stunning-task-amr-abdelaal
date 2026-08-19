@@ -32,7 +32,7 @@ export async function generateBuildPlan({
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new GeminiConfigError(
-      "GEMINI_API_KEY is not set. Add it to .env.local."
+      "GEMINI_API_KEY is not set. Add it to .env.local.",
     );
   }
 
@@ -65,7 +65,7 @@ ${integrations.map((i) => `- ${i.blurb}`).join("\n")}`;
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new GeminiUpstreamError(
-      `Gemini API responded with ${response.status}: ${body.slice(0, 500)}`
+      `Gemini API responded with ${response.status}: ${body.slice(0, 500)}`,
     );
   }
 
@@ -75,7 +75,7 @@ ${integrations.map((i) => `- ${i.blurb}`).join("\n")}`;
 
   if (!text) {
     throw new GeminiUpstreamError(
-      "Gemini API returned no usable text (the response may have been blocked)."
+      "Gemini API returned no usable text (the response may have been blocked).",
     );
   }
 

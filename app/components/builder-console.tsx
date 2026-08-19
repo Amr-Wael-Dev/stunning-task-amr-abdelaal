@@ -27,7 +27,7 @@ export function BuilderConsole() {
     setSelectedIds((current) =>
       current.includes(id)
         ? current.filter((existing) => existing !== id)
-        : [...current, id]
+        : [...current, id],
     );
   }
 
@@ -40,7 +40,10 @@ export function BuilderConsole() {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmedPrompt, integrationIds: selectedIds }),
+        body: JSON.stringify({
+          prompt: trimmedPrompt,
+          integrationIds: selectedIds,
+        }),
       });
       const data = await response.json();
 
@@ -53,7 +56,9 @@ export function BuilderConsole() {
       setResult(data.text);
       setStatus("success");
     } catch {
-      setErrorMessage("Could not reach the server. Check your connection and try again.");
+      setErrorMessage(
+        "Could not reach the server. Check your connection and try again.",
+      );
       setStatus("error");
     }
   }
@@ -64,7 +69,7 @@ export function BuilderConsole() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12 lg:items-start">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-12">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <label htmlFor="prompt" className="text-sm font-medium">
@@ -77,13 +82,14 @@ export function BuilderConsole() {
             placeholder="A waitlist page that collects emails and notifies the team when someone signs up..."
             rows={6}
             maxLength={MAX_PROMPT_LENGTH}
-            className="w-full resize-none rounded-xl border border-surface-border bg-surface px-4 py-3 text-base text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+            className="border-surface-border bg-surface text-foreground placeholder:text-muted focus:ring-accent w-full resize-none rounded-xl border px-4 py-3 text-base focus:ring-2 focus:outline-none"
           />
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted">
-              Selected integrations are added as context for the assistant, they are not connected to anything real.
+            <p className="text-muted text-xs">
+              Selected integrations are added as context for the assistant, they
+              are not connected to anything real.
             </p>
-            <span className="shrink-0 pl-3 text-xs text-muted">
+            <span className="text-muted shrink-0 pl-3 text-xs">
               {prompt.length} / {MAX_PROMPT_LENGTH}
             </span>
           </div>
@@ -124,7 +130,7 @@ export function BuilderConsole() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 font-medium text-accent-foreground transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
+          className="bg-accent text-accent-foreground inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 font-medium transition-transform active:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
         >
           {status === "loading" ? (
             <>
@@ -140,7 +146,12 @@ export function BuilderConsole() {
         </button>
       </form>
 
-      <ResponsePanel status={status} result={result} errorMessage={errorMessage} onRetry={submit} />
+      <ResponsePanel
+        status={status}
+        result={result}
+        errorMessage={errorMessage}
+        onRetry={submit}
+      />
     </div>
   );
 }
@@ -157,9 +168,9 @@ function ResponsePanel({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex min-h-[320px] flex-col rounded-2xl border border-surface-border bg-surface p-6 lg:min-h-[420px]">
+    <div className="border-surface-border bg-surface flex min-h-[320px] flex-col rounded-2xl border p-6 lg:min-h-[420px]">
       {status === "idle" && (
-        <div className="m-auto flex flex-col items-center gap-3 text-center text-muted">
+        <div className="text-muted m-auto flex flex-col items-center gap-3 text-center">
           <Sparkle className="h-6 w-6" />
           <p className="max-w-[28ch] text-sm">
             Your build plan will appear here.
@@ -169,23 +180,27 @@ function ResponsePanel({
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">
-          {["w-2/5", "w-full", "w-full", "w-4/5", "w-full", "w-3/5"].map((width, index) => (
-            <div
-              key={index}
-              className={`h-4 ${width} animate-pulse rounded bg-foreground/10`}
-            />
-          ))}
+          {["w-2/5", "w-full", "w-full", "w-4/5", "w-full", "w-3/5"].map(
+            (width, index) => (
+              <div
+                key={index}
+                className={`h-4 ${width} bg-foreground/10 animate-pulse rounded`}
+              />
+            ),
+          )}
         </div>
       )}
 
       {status === "error" && (
         <div className="m-auto flex max-w-[36ch] flex-col items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center">
           <WarningCircle className="h-6 w-6 text-red-500" weight="fill" />
-          <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {errorMessage}
+          </p>
           <button
             type="button"
             onClick={onRetry}
-            className="text-sm font-medium text-accent underline underline-offset-2"
+            className="text-accent text-sm font-medium underline underline-offset-2"
           >
             Try again
           </button>
@@ -193,7 +208,7 @@ function ResponsePanel({
       )}
 
       {status === "success" && result && (
-        <pre className="animate-fade-in-up whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+        <pre className="animate-fade-in-up text-foreground font-sans text-sm leading-relaxed whitespace-pre-wrap">
           {result}
         </pre>
       )}

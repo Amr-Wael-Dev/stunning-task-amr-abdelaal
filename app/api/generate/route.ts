@@ -22,14 +22,14 @@ export async function POST(request: Request) {
   if (typeof prompt !== "string" || prompt.trim().length === 0) {
     return Response.json(
       { error: "Please describe what you want to build." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (prompt.length > MAX_PROMPT_LENGTH) {
     return Response.json(
       { error: `Prompt is too long (max ${MAX_PROMPT_LENGTH} characters).` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -48,20 +48,23 @@ export async function POST(request: Request) {
       console.error("[api/generate] config error:", error.message);
       return Response.json(
         { error: "The build assistant is not configured yet." },
-        { status: 500 }
+        { status: 500 },
       );
     }
     if (error instanceof GeminiUpstreamError) {
       console.error("[api/generate] upstream error:", error.message);
       return Response.json(
-        { error: "The build assistant is unavailable right now. Try again in a moment." },
-        { status: 502 }
+        {
+          error:
+            "The build assistant is unavailable right now. Try again in a moment.",
+        },
+        { status: 502 },
       );
     }
     console.error("[api/generate] unexpected error:", error);
     return Response.json(
       { error: "Something went wrong. Try again." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
